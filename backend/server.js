@@ -7,7 +7,7 @@ const connectDB = require("./config/db");
 
 const app = express();
 
-// Middleware to handle Cors
+// Middleware to handlecors
 app.use(
     cors({
         origin: process.env.CLIENT_URL || '*',
@@ -20,5 +20,11 @@ app.use(express.json());
 
 connectDB();
 
+// Import your auth routes
+const authRoutes = require('./routes/authRoutes');
+
+// Mount auth routes under /auth
+app.use('/auth', authRoutes);
+
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`Server Running on the port ${PORT}`))
+app.listen(PORT, () => console.log(`Server Running on the port ${PORT}`));
