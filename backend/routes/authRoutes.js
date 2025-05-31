@@ -86,7 +86,15 @@ router.post('/logIn', async (req, res) => {
   }
 });
 
-
+router.get('/getLoginDetails', async (req, res) => {
+  try{
+    const user = await User.find();
+    res.json(user);
+  }
+  catch (err) {
+    res.status(500).json({ error: 'force is thilee'});
+  }
+})
 
 
 module.exports = router;
