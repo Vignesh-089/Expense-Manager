@@ -1,15 +1,16 @@
 const express = require('express');
 const Expense = require('../models/Expense');
 const Income = require('../models/Income');
+const authenticateUser = require('../middleware/authMiddleware');
 
 const router = express.Router();
 
-router.get('/getAllExpenseAmount', async (req, res) => {
-    const screenName = req.query.screenName || 'Expense'; // Default to "Expense" if not provided
+router.get('/getAllExpenseAmount', authenticateUser, async (req, res) => {
+    const screenName = req.query.screenName || 'Expense';
+    const userId = req.user.userId;
 
     try {
-        const expenses = await Expense.find({ screenName });
-
+        const expenses = await Expense.find({ screenName, userId });
         const totalAmount = expenses.reduce((sum, exp) => sum + parseFloat(exp.amount || 0), 0);
 
         res.json({
@@ -23,18 +24,18 @@ router.get('/getAllExpenseAmount', async (req, res) => {
     }
 });
 
-router.get('/getAllIncomeAmount', async (req, res) => {
+router.get('/getAllIncomeAmount', authenticateUser, async (req, res) => {
     const screenName = req.query.screenName || 'Income';
-    try {
-        const income = await Income.find({ screenName });
+    const userId = req.user.userId;
 
+    try {
+        const income = await Income.find({ screenName, userId });
         const totalAmount = income.reduce((sum, exp) => sum + parseFloat(exp.amount || 0), 0);
 
         res.json({
             screenName,
             income,
-            totalAmount: totalAmount.toFixed(2),
-
+            totalAmount: totalAmount.toFixed(2)
         });
     } catch (err) {
         console.error('Error fetching income:', err);
@@ -42,14 +43,15 @@ router.get('/getAllIncomeAmount', async (req, res) => {
     }
 });
 
-router.get('/getAllBalanceAmount', async (req, res) => {
+router.get('/getAllBalanceAmount', authenticateUser, async (req, res) => {
+    const userId = req.user.userId;
+
     try {
-        const incomeList = await Income.find({});
-        const expenseList = await Expense.find({});
+        const incomeList = await Income.find({ userId });
+        const expenseList = await Expense.find({ userId });
 
         const totalIncome = incomeList.reduce((sum, inc) => sum + parseFloat(inc.amount || 0), 0);
         const totalExpense = expenseList.reduce((sum, exp) => sum + parseFloat(exp.amount || 0), 0);
-
         const balance = totalIncome - totalExpense;
 
         res.json({
@@ -64,10 +66,21 @@ router.get('/getAllBalanceAmount', async (req, res) => {
     }
 });
 
-router.get('/getAllTransactionDetails', async (req, res) => {
+router.get('/getAllTransactionDetails', authenticateUser, async (req, res) => {
+    const { startDate, endDate } = req.query;
+    const userId = req.user.userId;
+
+    let dateFilter = { userId };
+    if (startDate && endDate) {
+        const start = new Date(startDate);
+        const end = new Date(endDate);
+        end.setHours(23, 59, 59, 999);
+        dateFilter.date = { $gte: start, $lte: end };
+    }
+
     try {
-        const income = await Income.find({});
-        const expense = await Expense.find({});
+        const income = await Income.find(dateFilter);
+        const expense = await Expense.find(dateFilter);
 
         const formattedIncome = income.map(tx => ({
             ...tx._doc,
@@ -80,7 +93,7 @@ router.get('/getAllTransactionDetails', async (req, res) => {
             type: 'Expense',
             date: new Date(tx.date)
         }));
-        
+
         const allTransactions = [...formattedIncome, ...formattedExpense].sort(
             (a, b) => b.date - a.date
         );
@@ -91,6 +104,36 @@ router.get('/getAllTransactionDetails', async (req, res) => {
         });
     } catch (err) {
         console.error('Error fetching transaction details:', err);
+        res.status(500).json({ error: 'Server error' });
+    }
+});
+
+router.get('/getTopExpenses', authenticateUser, async (req, res) => {
+    const userId = req.user.userId;
+
+    try {
+        const topExpenses = await Expense.find({ userId })
+            .sort({ amount: -1 })
+            .limit(5);
+
+        res.json({ topExpenses });
+    } catch (err) {
+        console.error('Error fetching top 5 expenses:', err);
+        res.status(500).json({ error: 'Server error' });
+    }
+});
+
+router.get('/getTopIncome', authenticateUser, async (req, res) => {
+    const userId = req.user.userId;
+
+    try {
+        const topIncome = await Income.find({ userId })
+            .sort({ amount: -1 })
+            .limit(5);
+
+        res.json({ topIncome });
+    } catch (error) {
+        console.error('Error fetching top 5 income:', error);
         res.status(500).json({ error: 'Server error' });
     }
 });

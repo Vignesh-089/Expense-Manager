@@ -1,6 +1,11 @@
 const mongoose = require('mongoose');
 
 const expenseSchema = new mongoose.Schema({
+  userId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    required: true,
+  },
   category: {
     type: String,
     required: true,
@@ -14,12 +19,12 @@ const expenseSchema = new mongoose.Schema({
     required: true,
   },
   date: {
-    type: String,  // You can use Date if you're storing it as a Date object
+    type: Date,
     required: true,
   },
   screenName: {
     type: String,
-    default: 'Expense',  // Optional: you can make this required if you prefer
+    default: 'Expense',
   },
 }, { timestamps: true });
 

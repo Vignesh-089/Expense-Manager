@@ -1,11 +1,13 @@
 const express = require('express');
 
+const authenticateUser = require('../middleware/authMiddleware');
 const Income = require('../models/Income');
 
 const router = express.Router();
 
-router.put('/createOrUpdateIncome', async (req, res) => {
+router.put('/createOrUpdateIncome', authenticateUser, async (req, res) => {
     const { category, amount, method, date } = req.body;
+    const userId = req.user.userId;
 
     if (!category || !amount || !method || !date) {
         return res.status(400).json({ error: 'All fields are required' });
@@ -13,7 +15,7 @@ router.put('/createOrUpdateIncome', async (req, res) => {
 
     try {
         // Find expense by category
-        let income = await Income.findOne({ category });
+        let income = await Income.findOne({ category, userId });
 
         if (income) {
             // Update existing expense
@@ -29,7 +31,7 @@ router.put('/createOrUpdateIncome', async (req, res) => {
             });
         } else {
             // Create new expense
-            const newIncome = new Income({ category, amount, method, date, screenName: 'Income' });
+            const newIncome = new Income({ category, amount, method, date, screenName: 'Income', userId });
             await newIncome.save();
 
             return res.status(200).json({
@@ -44,18 +46,20 @@ router.put('/createOrUpdateIncome', async (req, res) => {
 });
 
 
-router.get('/getAllIncomeDetails', async (req, res) => {
+router.get('/getAllIncomeDetails', authenticateUser, async (req, res) => {
     try {
-        const income = await Income.find();
+        const userId = req.user.userId;
+        const income = await Income.find({ userId });
         res.json(income);
     } catch (err) {
         res.status(500).json({ error: 'Server error' });
     }
 });
 
-router.get('/getIncomeDetailsById/:id', async (req, res) => {
+router.get('/getIncomeDetailsById/:id', authenticateUser, async (req, res) => {
     try {
-        const incomeDetails = await Income.findById(req.params.id);
+        const userId = req.user.userId;
+        const incomeDetails = await Income.findById({ _id: req.params.id, userId });
         if (!incomeDetails) return res.status(404).json({ error: 'Income not found' });
         res.json(incomeDetails);
     } catch (error) {

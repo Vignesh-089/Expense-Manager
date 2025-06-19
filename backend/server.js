@@ -25,6 +25,8 @@ const expenseRoutes = require('./routes/expenseRoutes');
 const changePasswordRoutes = require('./routes/changePasswordRoutes');
 const incomeRoutes = require('./routes/incomeRoutes');
 const dashboardRoutes = require('./routes/dashboardRoutes');
+const calenderRoutes = require('./routes/calenderRoutes');
+const reportRoutes = require('./routes/reportRoutes');
 
 app.use('/auth', authRoutes);
 app.use('/user', userDetailsRoutes);
@@ -32,6 +34,8 @@ app.use('/expense', expenseRoutes);
 app.use('/income', incomeRoutes);
 app.use('/password', changePasswordRoutes);
 app.use('/dashboard', dashboardRoutes);
+app.use('/calender', calenderRoutes);
+app.use('/report', reportRoutes);
 
 // Server
 const PORT = process.env.PORT || 8000;
